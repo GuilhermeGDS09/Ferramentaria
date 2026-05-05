@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferramentaria — Sistema de Capacidade</title>
+<style>
+  :root{
+    --bg:#f8fafc;--surface:#ffffff;--border:#e2e8f0;--border2:#cbd5e1;
+    --text:#1e293b;--muted:#64748b;--hint:#94a3b8;
+    --blue:#2563eb;--blue-bg:#eff6ff;--blue-fg:#1d4ed8;
+    --green:#16a34a;--green-bg:#f0fdf4;--green-fg:#15803d;
+    --amber:#d97706;--amber-bg:#fffbeb;--amber-fg:#b45309;
+    --red:#dc2626;--red-bg:#fef2f2;--red-fg:#b91c1c;
+    --navy:#1a3a5c;--radius:8px;--radius-lg:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  /* Layout */
+  .sidebar{width:220px;background:var(--navy);min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:100}
+  .sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+  .sidebar-logo h1{font-size:15px;font-weight:700;color:#fff;letter-spacing:.3px}
+  .sidebar-logo p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,.65);cursor:pointer;font-size:13px;border-left:3px solid transparent;transition:all .15s}
+  .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+  .nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-left-color:#60a5fa}
+  .nav-icon{width:18px;height:18px;opacity:.8;flex-shrink:0}
+  .main{margin-left:220px;min-height:100vh}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .topbar h2{font-size:16px;font-weight:600}
+  .topbar-actions{display:flex;gap:8px}
+  .content{padding:20px 24px}
+  /* Cards */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+  .card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  /* Metrics */
+  .metric{background:var(--bg);border-radius:var(--radius);padding:14px;text-align:center}
+  .metric-label{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+  .metric-val{font-size:24px;font-weight:700;color:var(--text)}
+  .metric-val.g{color:var(--green)}.metric-val.w{color:var(--amber)}.metric-val.r{color:var(--red)}.metric-val.b{color:var(--blue)}
+  /* Forms */
+  .form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .form-label{font-size:12px;color:var(--muted);min-width:150px;font-weight:500}
+  .form-input{flex:1}
+  input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:#fff;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border .15s}
+  input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border2);border-radius:var(--radius);background:#fff;color:var(--text);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap}
+  .btn:hover{background:var(--bg)}
+  .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}.btn-primary:hover{background:#1d4ed8}
+  .btn-success{background:var(--green);color:#fff;border-color:var(--green)}.btn-success:hover{background:#15803d}
+  .btn-danger{background:var(--red-bg);color:var(--red);border-color:#fca5a5}.btn-danger:hover{background:#fee2e2}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  /* Table */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border2);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;background:var(--bg)}
+  td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#f8fafc}
+  /* Badges */
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+  .badge-green{background:var(--green-bg);color:var(--green-fg)}
+  .badge-amber{background:var(--amber-bg);color:var(--amber-fg)}
+  .badge-red{background:var(--red-bg);color:var(--red-fg)}
+  .badge-blue{background:var(--blue-bg);color:var(--blue-fg)}
+  /* Ops */
+  .op-tag{display:inline-block;padding:2px 8px;margin:2px;border-radius:4px;font-size:11px;border:1px solid var(--border2);color:var(--muted);background:var(--bg)}
+  .step-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+  .step-row:last-child{border-bottom:none}
+  .step-num{width:24px;height:24px;border-radius:50%;background:var(--blue-bg);color:var(--blue-fg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+  /* Gantt */
+  .gantt-row{display:flex;align-items:center;gap:0;margin-bottom:4px}
+  .gantt-label{font-size:11px;color:var(--muted);min-width:120px;text-align:right;padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gantt-track{flex:1;height:20px;background:var(--bg);border-radius:4px;position:relative;overflow:hidden;border:1px solid var(--border)}
+  .gantt-bar{height:100%;border-radius:3px;position:absolute;display:flex;align-items:center;padding:0 5px;font-size:9px;color:#fff;white-space:nowrap;overflow:hidden}
+  .gantt-dates{display:flex;justify-content:space-between;padding-left:130px;font-size:10px;color:var(--hint);margin-bottom:4px}
+  /* Bar */
+  .bar-wrap{height:10px;border-radius:5px;background:var(--bg);overflow:hidden;margin:4px 0;border:1px solid var(--border)}
+  .bar-fill{height:100%;border-radius:5px;transition:width .4s}
+  /* Toast */
+  .toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(10px);transition:all .25s}
+  .toast.show{opacity:1;transform:translateY(0)}
+  .toast.ok{background:#dcfce7;color:#15803d;border:1px solid #86efac}
+  .toast.err{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
+  /* Section hide */
+  .page{display:none}.page.active{display:block}
+  /* DB status */
+  .db-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>⚙ Ferramentaria</h1>
+    <p>Sistema de Capacidade</p>
+  </div>
+  <nav style="padding:12px 0;flex:1">
+    <div class="nav-item active" onclick="goto('dashboard')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="goto('maquinas')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      Máquinas
+    </div>
+    <div class="nav-item" onclick="goto('pecas')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      Peças
+    </div>
+    <div class="nav-item" onclick="goto('ordens')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      Ordens
+    </div>
+    <div class="nav-item" onclick="goto('programacao')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Programação
+    </div>
+  </nav>
+  <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.1)">
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:8px">Banco de dados</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.7)"><span class="db-dot"></span>SQLite local</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px">ferramentaria.db</div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h2 id="page-title">Dashboard</h2>
+    <div class="topbar-actions">
+      <button class="btn btn-success" onclick="exportExcel()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="metric"><div class="metric-label">Máquinas</div><div class="metric-val b" id="d-maq">—</div></div>
+        <div class="metric"><div class="metric-label">Peças cadastradas</div><div class="metric-val" id="d-pecas">—</div></div>
+        <div class="metric"><div class="metric-label">Ordens em aberto</div><div class="metric-val w" id="d-ordens">—</div></div>
+        <div class="metric"><div class="metric-label">Cap. total (h/sem)</div><div class="metric-val g" id="d-cap">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Carga por máquina</div>
+        <div id="d-carga-list"><div style="color:var(--muted);font-size:13px">Carregando...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Próximas conclusões</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Ordem</th><th>Peça</th><th>Qtd</th><th>Prioridade</th><th>Previsão</th><th>Cliente</th></tr></thead>
+          <tbody id="d-ordens-list"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÁQUINAS -->
+    <div id="page-maquinas" class="page">
+      <div class="card">
+        <div class="card-title">Cadastrar máquina</div>
+        <div class="grid2">
+          <div>
+            <div class="form-row"><span class="form-label">Nome</span><input type="text" id="m-nome" placeholder="Torno CNC #1" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Tipo</span>
+              <select id="m-tipo" class="form-input"><option>Torno CNC</option><option>Fresadora</option><option>Centro de Usinagem</option><option>Retificadora</option><option>Fio EDM</option><option>Mandrilhadora</option><option>Prensa</option><option>Injetora</option><option>Outro</option></select>
+            </div>
+            <div class="form-row"><span class="form-label">Turnos/dia</span>
+              <select id="m-turnos" class="form-input"><option value="1">1 turno (8h)</option><option value="2">2 turnos (16h)</option><option value="3">3 turnos (24h)</option></select>
+            </div>
+          </div>
+          <div>
+            <div class="form-row"><span class="form-label">Dias úteis/semana</span><input type="number" id="m-dias" value="5" min="1" max="7" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Eficiência (%)</span><input type="number" id="m-efic" value="85" min="10" max="100" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Parada plan. (h/sem)</span><input type="number" id="m-parada" value="2" min="0" class="form-input"></div>
+          </div>
+        </div>
+        <div style="margin-top:12px"><button class="btn btn-primary" onclick="addMaquina()">+ Adicionar máquina</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Máquinas cadastradas</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Nome</th><th>Tipo</th><th>Turnos</th><th>Dias/sem</th><th>Eficiência</th><th>Cap. líq. (h/sem)</th><th></th></tr></thead>
+          <tbody id="m-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PEÇAS -->
+    <div id="page-pecas" class="page">
+      <div class="card">
+        <div class="card-title">Cadastrar peça com roteiro</div>
+        <div class="grid2">
+          <div>
+            <div class="form-row"><span class="form-label">Código</span><input type="text" id="p-cod" placeholder="PCA-001" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Descrição</span><input type="text" id="p-desc" placeholder="Eixo de transmissão" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Material</span><input type="text" id="p-mat" placeholder="Aço SAE 1045" class="form-input"></div>
+          </div>
+          <div>
+            <div class="form-row"><span class="form-label">Tempo setup (min)</span><input type="number" id="p-setup" value="30" min="0" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Lote mínimo (pcs)</span><input type="number" id="p-lote" value="1" min="1" class="form-input"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px">Roteiro de fabricação</div>
+          <div id="ops-list"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
+            <select id="op-maq" style="flex:1;min-width:140px"><option value="">Selecionar máquina...</option></select>
+            <input type="text" id="op-desc" placeholder="Descrição da operação" style="flex:2;min-width:150px">
+            <input type="number" id="op-tempo" placeholder="Tempo/pc (min)" style="width:140px" min="0.1" step="0.1">
+            <button class="btn btn-primary btn-sm" onclick="addOp()">+ Operação</button>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn btn-success" onclick="savePeca()">Salvar peça</button>
+          <button class="btn" onclick="clearPeca()">Limpar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Peças cadastradas</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Código</th><th>Descrição</th><th>Material</th><th>Operações</th><th>Setup</th><th></th></tr></thead>
+          <tbody id="p-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDENS -->
+    <div id="page-ordens" class="page">
+      <div class="card">
+        <div class="card-title">Nova ordem de produção</div>
+        <div class="grid2">
+          <div>
+            <div class="form-row"><span class="form-label">Nº da ordem</span><input type="text" id="o-num" placeholder="OP-2026-001" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Peça</span><select id="o-peca" class="form-input"><option value="">Selecionar...</option></select></div>
+            <div class="form-row"><span class="form-label">Quantidade (pcs)</span><input type="number" id="o-qty" value="10" min="1" class="form-input"></div>
+          </div>
+          <div>
+            <div class="form-row"><span class="form-label">Data de início</span><input type="date" id="o-start" class="form-input"></div>
+            <div class="form-row"><span class="form-label">Prioridade</span>
+              <select id="o-prio" class="form-input"><option value="Alta">Alta</option><option value="Normal" selected>Normal</option><option value="Baixa">Baixa</option></select>
+            </div>
+            <div class="form-row"><span class="form-label">Cliente</span><input type="text" id="o-cli" placeholder="Cliente ABC" class="form-input"></div>
+          </div>
+        </div>
+        <div style="margin-top:12px"><button class="btn btn-primary" onclick="addOrdem()">+ Adicionar ordem</button></div>
+      </div>
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="metric"><div class="metric-label">Total ordens</div><div class="metric-val" id="o-total">—</div></div>
+        <div class="metric"><div class="metric-label">Em aberto</div><div class="metric-val w" id="o-aberto">—</div></div>
+        <div class="metric"><div class="metric-label">Horas totais</div><div class="metric-val b" id="o-horas">—</div></div>
+        <div class="metric"><div class="metric-label">Concluídas</div><div class="metric-val g" id="o-concluidas">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Lista de ordens</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Nº Ordem</th><th>Peça</th><th>Qtd</th><th>Início</th><th>Prioridade</th><th>Cliente</th><th>Status</th><th>Previsão</th><th></th></tr></thead>
+          <tbody id="o-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRAMAÇÃO -->
+    <div id="page-programacao" class="page">
+      <div class="grid3" style="margin-bottom:16px">
+        <div class="metric"><div class="metric-label">Ordens programadas</div><div class="metric-val b" id="g-ordens">—</div></div>
+        <div class="metric"><div class="metric-label">Prazo mais longo</div><div class="metric-val w" id="g-prazo">—</div></div>
+        <div class="metric"><div class="metric-label">Máquina gargalo</div><div class="metric-val r" id="g-gargalo">—</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin:0;border:none;padding:0">Gantt — programação por máquina</div>
+          <button class="btn btn-primary btn-sm" onclick="loadProgramacao()">Recalcular</button>
+        </div>
+        <div id="gantt-area"><div style="color:var(--muted);font-size:13px">Clique em Recalcular para gerar o Gantt.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detalhamento por ordem</div>
+        <div id="ordem-detail"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API = "";
+let maquinas = [], pecas = [], ordens = [], currentOps = [];
+const COLORS = ["#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#6b7280"];
+
+// ─── NAVIGATION ────────────────────────────────────────────
+const TITLES = {dashboard:"Dashboard",maquinas:"Máquinas",pecas:"Peças",ordens:"Ordens de Produção",programacao:"Programação"};
+function goto(id){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  document.getElementById("page-"+id).classList.add("active");
+  document.querySelectorAll(".nav-item")[Object.keys(TITLES).indexOf(id)].classList.add("active");
+  document.getElementById("page-title").textContent = TITLES[id];
+  if(id==="dashboard")loadDashboard();
+  if(id==="maquinas")loadMaquinas();
+  if(id==="pecas"){loadPecas();refreshMaqSelect();}
+  if(id==="ordens"){loadOrdens();refreshPecaSelect();}
+  if(id==="programacao")loadProgramacao();
+}
+
+function toast(msg, ok=true){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.className="toast "+(ok?"ok":"err")+" show";
+  setTimeout(()=>t.classList.remove("show"),3000);
+}
+
+async function api(path, method="GET", body=null){
+  const opts={method,headers:{"Content-Type":"application/json"}};
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch(API+path,opts);
+  return r.json();
+}
+
+// ─── DASHBOARD ─────────────────────────────────────────────
+async function loadDashboard(){
+  const [maq, pec, ord, prog] = await Promise.all([
+    api("/api/maquinas"), api("/api/pecas"), api("/api/ordens"), api("/api/programacao")
+  ]);
+  maquinas=maq; pecas=pec; ordens=ord;
+  const aberto=ord.filter(o=>o.status==="Aberta").length;
+  const totalCap=maq.reduce((s,m)=>s+m.cap_liquida,0);
+  document.getElementById("d-maq").textContent=maq.length;
+  document.getElementById("d-pecas").textContent=pec.length;
+  document.getElementById("d-ordens").textContent=aberto;
+  document.getElementById("d-cap").textContent=totalCap.toFixed(1)+"h";
+
+  // Carga por máquina
+  const maqLoad={};
+  ord.filter(o=>o.status==="Aberta").forEach(o=>{
+    const p=pec.find(x=>x.id===o.peca_id);
+    if(!p)return;
+    p.operacoes.forEach(op=>{
+      const h=(p.setup_min/60)+(op.tempo_min/60*o.quantidade);
+      maqLoad[op.maquina_id]=(maqLoad[op.maquina_id]||{h:0,nome:op.maquina_nome});
+      maqLoad[op.maquina_id].h+=h;
+    });
+  });
+  const cargaEl=document.getElementById("d-carga-list");
+  if(!maq.length){cargaEl.innerHTML='<p style="color:var(--muted)">Cadastre máquinas.</p>';return;}
+  cargaEl.innerHTML=maq.map(m=>{
+    const l=maqLoad[m.id]?.h||0;
+    const pct=m.cap_liquida>0?Math.min(100,Math.round(l/m.cap_liquida*100)):0;
+    const color=pct>90?"#dc2626":pct>75?"#d97706":"#16a34a";
+    return`<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+        <span style="font-weight:500">${m.nome}</span>
+        <span style="color:var(--muted)">${l.toFixed(1)}h / ${m.cap_liquida.toFixed(1)}h — <strong style="color:${color}">${pct}%</strong></span>
+      </div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join("");
+
+  // Próximas ordens
+  const tbody=document.getElementById("d-ordens-list");
+  const schedMap={};
+  prog.forEach(s=>schedMap[s.ordem.numero]=s);
+  const sorted=[...ord].filter(o=>o.status==="Aberta").sort((a,b)=>{
+    const ea=schedMap[a.numero]?.conclusao_raw||"9999";
+    const eb=schedMap[b.numero]?.conclusao_raw||"9999";
+    return ea.localeCompare(eb);
+  }).slice(0,8);
+  tbody.innerHTML=sorted.map(o=>{
+    const s=schedMap[o.numero];
+    const pBadge=prioBadge(o.prioridade);
+    return`<tr><td><strong>${o.numero}</strong></td><td>${o.peca_codigo||"—"}</td><td>${o.quantidade}</td><td>${pBadge}</td><td style="color:var(--green);font-weight:600">${s?s.conclusao:"—"}</td><td>${o.cliente||"—"}</td></tr>`;
+  }).join("");
+}
+
+// ─── MÁQUINAS ──────────────────────────────────────────────
+async function loadMaquinas(){
+  maquinas=await api("/api/maquinas");
+  const tb=document.getElementById("m-tbody");
+  if(!maquinas.length){tb.innerHTML='<tr><td colspan="7" style="color:var(--muted);padding:16px">Nenhuma máquina cadastrada.</td></tr>';return;}
+  tb.innerHTML=maquinas.map(m=>`<tr>
+    <td><strong>${m.nome}</strong></td><td>${m.tipo}</td>
+    <td>${m.turnos} turno${m.turnos>1?"s":""}</td><td>${m.dias}</td>
+    <td>${m.eficiencia}%</td><td><strong style="color:var(--green)">${m.cap_liquida.toFixed(1)}h</strong></td>
+    <td><button class="btn btn-danger btn-sm" onclick="delMaquina(${m.id})">Remover</button></td>
+  </tr>`).join("");
+}
+
+async function addMaquina(){
+  const nome=document.getElementById("m-nome").value.trim();
+  if(!nome){toast("Informe o nome da máquina.",false);return;}
+  const r=await api("/api/maquinas","POST",{
+    nome, tipo:document.getElementById("m-tipo").value,
+    turnos:+document.getElementById("m-turnos").value,
+    dias:+document.getElementById("m-dias").value,
+    eficiencia:+document.getElementById("m-efic").value,
+    parada:+document.getElementById("m-parada").value
+  });
+  if(r.ok){toast("Máquina adicionada!");document.getElementById("m-nome").value="";loadMaquinas();}
+  else toast(r.erro||"Erro ao salvar.",false);
+}
+
+async function delMaquina(id){
+  if(!confirm("Remover máquina?"))return;
+  await api("/api/maquinas/"+id,"DELETE");
+  toast("Máquina removida.");loadMaquinas();
+}
+
+// ─── PEÇAS ─────────────────────────────────────────────────
+async function loadPecas(){
+  pecas=await api("/api/pecas");
+  const tb=document.getElementById("p-tbody");
+  if(!pecas.length){tb.innerHTML='<tr><td colspan="6" style="color:var(--muted);padding:16px">Nenhuma peça cadastrada.</td></tr>';return;}
+  tb.innerHTML=pecas.map(p=>`<tr>
+    <td><strong>${p.codigo}</strong></td><td>${p.descricao}</td><td>${p.material||"—"}</td>
+    <td>${p.operacoes.map(o=>`<span class="op-tag">${o.sequencia}. ${o.descricao}</span>`).join("")}</td>
+    <td>${p.setup_min} min</td>
+    <td><button class="btn btn-danger btn-sm" onclick="delPeca(${p.id})">Remover</button></td>
+  </tr>`).join("");
+}
+
+function refreshMaqSelect(){
+  const sel=document.getElementById("op-maq");
+  sel.innerHTML='<option value="">Selecionar máquina...</option>'+maquinas.map(m=>`<option value="${m.id}">${m.nome}</option>`).join("");
+}
+
+function addOp(){
+  const mId=document.getElementById("op-maq").value;
+  const desc=document.getElementById("op-desc").value.trim();
+  const tempo=parseFloat(document.getElementById("op-tempo").value);
+  if(!mId||!desc||!tempo||tempo<=0){toast("Preencha máquina, descrição e tempo.",false);return;}
+  const m=maquinas.find(x=>x.id==mId);
+  currentOps.push({maquina_id:+mId, maquina_nome:m.nome, descricao:desc, tempo_min:tempo});
+  document.getElementById("op-desc").value="";
+  document.getElementById("op-tempo").value="";
+  renderOpsList();
+}
+
+function renderOpsList(){
+  const el=document.getElementById("ops-list");
+  if(!currentOps.length){el.innerHTML='<p style="font-size:12px;color:var(--muted);padding:4px 0">Nenhuma operação.</p>';return;}
+  el.innerHTML=currentOps.map((op,i)=>`
+    <div class="step-row">
+      <div class="step-num">${i+1}</div>
+      <div style="flex:1"><strong style="font-size:12px">${op.descricao}</strong>
+        <span class="op-tag">${op.maquina_nome}</span>
+        <span style="font-size:11px;color:var(--muted)">${op.tempo_min} min/pc</span>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="delOp(${i})">x</button>
+    </div>`).join("");
+}
+
+function delOp(i){currentOps.splice(i,1);renderOpsList();}
+
+async function savePeca(){
+  const cod=document.getElementById("p-cod").value.trim();
+  const desc=document.getElementById("p-desc").value.trim();
+  if(!cod||!desc){toast("Informe código e descrição.",false);return;}
+  if(!currentOps.length){toast("Adicione pelo menos uma operação.",false);return;}
+  const r=await api("/api/pecas","POST",{
+    codigo:cod, descricao:desc,
+    material:document.getElementById("p-mat").value,
+    setup_min:+document.getElementById("p-setup").value||30,
+    lote_minimo:+document.getElementById("p-lote").value||1,
+    operacoes:currentOps.map((op,i)=>({...op,sequencia:i+1}))
+  });
+  if(r.ok){toast("Peça salva!");clearPeca();loadPecas();}
+  else toast(r.erro||"Erro ao salvar.",false);
+}
+
+function clearPeca(){
+  ["p-cod","p-desc","p-mat"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("p-setup").value=30;
+  document.getElementById("p-lote").value=1;
+  currentOps=[];renderOpsList();
+}
+
+async function delPeca(id){
+  if(!confirm("Remover peça?"))return;
+  await api("/api/pecas/"+id,"DELETE");
+  toast("Peça removida.");loadPecas();
+}
+
+// ─── ORDENS ────────────────────────────────────────────────
+async function loadOrdens(){
+  ordens=await api("/api/ordens");
+  const prog=await api("/api/programacao");
+  const sched={};
+  prog.forEach(s=>sched[s.ordem.numero]=s);
+  const ab=ordens.filter(o=>o.status==="Aberta").length;
+  const conc=ordens.filter(o=>o.status==="Concluída").length;
+  const ht=ordens.reduce((s,o)=>{
+    const p=pecas.find(x=>x.id===o.peca_id);
+    if(!p)return s;
+    return s+p.operacoes.reduce((ss,op)=>ss+(p.setup_min/60)+(op.tempo_min/60*o.quantidade),0);
+  },0);
+  document.getElementById("o-total").textContent=ordens.length;
+  document.getElementById("o-aberto").textContent=ab;
+  document.getElementById("o-horas").textContent=ht.toFixed(1)+"h";
+  document.getElementById("o-concluidas").textContent=conc;
+
+  const tb=document.getElementById("o-tbody");
+  if(!ordens.length){tb.innerHTML='<tr><td colspan="9" style="color:var(--muted);padding:16px">Nenhuma ordem.</td></tr>';return;}
+  tb.innerHTML=ordens.map(o=>{
+    const s=sched[o.numero];
+    const stBadge=o.status==="Concluída"?'<span class="badge badge-green">Concluída</span>':'<span class="badge badge-blue">Aberta</span>';
+    return`<tr>
+      <td><strong>${o.numero}</strong></td>
+      <td>${o.peca_codigo||"—"}</td><td>${o.quantidade}</td>
+      <td>${fmtDate(o.data_inicio)}</td><td>${prioBadge(o.prioridade)}</td>
+      <td>${o.cliente||"—"}</td><td>${stBadge}</td>
+      <td style="color:var(--green);font-weight:600">${s?s.conclusao:"—"}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        ${o.status==="Aberta"?`<button class="btn btn-success btn-sm" onclick="patchOrdem(${o.id},'Concluída')">✓</button>`:`<button class="btn btn-sm" onclick="patchOrdem(${o.id},'Aberta')">Reabrir</button>`}
+        <button class="btn btn-danger btn-sm" onclick="delOrdem(${o.id})">x</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function refreshPecaSelect(){
+  pecas=await api("/api/pecas");
+  const sel=document.getElementById("o-peca");
+  sel.innerHTML='<option value="">Selecionar...</option>'+pecas.map(p=>`<option value="${p.id}">${p.codigo} — ${p.descricao}</option>`).join("");
+}
+
+async function addOrdem(){
+  const num=document.getElementById("o-num").value.trim();
+  const pId=document.getElementById("o-peca").value;
+  const start=document.getElementById("o-start").value;
+  if(!num||!pId||!start){toast("Preencha nº da ordem, peça e data de início.",false);return;}
+  const r=await api("/api/ordens","POST",{
+    numero:num, peca_id:+pId,
+    quantidade:+document.getElementById("o-qty").value||1,
+    data_inicio:start,
+    prioridade:document.getElementById("o-prio").value,
+    cliente:document.getElementById("o-cli").value
+  });
+  if(r.ok){toast("Ordem adicionada!");document.getElementById("o-num").value="";document.getElementById("o-cli").value="";loadOrdens();}
+  else toast(r.erro||"Erro ao salvar.",false);
+}
+
+async function patchOrdem(id, status){
+  await api("/api/ordens/"+id,"PATCH",{status});
+  toast("Status atualizado."); loadOrdens();
+}
+
+async function delOrdem(id){
+  if(!confirm("Remover ordem?"))return;
+  await api("/api/ordens/"+id,"DELETE");
+  toast("Ordem removida."); loadOrdens();
+}
+
+// ─── PROGRAMAÇÃO ───────────────────────────────────────────
+async function loadProgramacao(){
+  const prog=await api("/api/programacao");
+  document.getElementById("g-ordens").textContent=prog.length;
+  if(!prog.length){
+    document.getElementById("gantt-area").innerHTML='<p style="color:var(--muted)">Sem ordens abertas para programar.</p>';
+    document.getElementById("ordem-detail").innerHTML="";
+    ["g-prazo","g-gargalo"].forEach(id=>document.getElementById(id).textContent="—");
+    return;
+  }
+
+  const allEnds=prog.map(s=>s.conclusao_raw).sort();
+  document.getElementById("g-prazo").textContent=fmtDate(allEnds[allEnds.length-1]);
+
+  // Gargalo
+  const maqH={};
+  prog.forEach(s=>s.ops.forEach(op=>maqH[op.maquina]=(maqH[op.maquina]||0)+op.horas));
+  const gar=Object.entries(maqH).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById("g-gargalo").textContent=gar?`${gar[0]} (${gar[1].toFixed(1)}h)`:"—";
+
+  renderGantt(prog);
+  renderDetail(prog);
+}
+
+function renderGantt(prog){
+  const area=document.getElementById("gantt-area");
+  const allDates=prog.flatMap(s=>s.ops.flatMap(op=>[op.inicio,op.conclusao])).map(d=>parseDate(d));
+  if(!allDates.length){area.innerHTML="";return;}
+  const minD=new Date(Math.min(...allDates));
+  const maxD=new Date(Math.max(...allDates));
+  const span=Math.max(1,Math.round((maxD-minD)/86400000));
+
+  const maqRows={};
+  prog.forEach((s,i)=>{
+    s.ops.forEach(op=>{
+      if(!maqRows[op.maquina])maqRows[op.maquina]=[];
+      const left=Math.round((parseDate(op.inicio)-minD)/86400000/span*100);
+      const width=Math.max(1,Math.round((parseDate(op.conclusao)-parseDate(op.inicio))/86400000/span*100));
+      maqRows[op.maquina].push({label:`${s.ordem.numero}`,left,width,color:COLORS[i%COLORS.length]});
+    });
+  });
+
+  const hdr=`<div class="gantt-dates"><span>${fmtDatePT(minD)}</span><span>${fmtDatePT(addDays(minD,Math.floor(span/2)))}</span><span>${fmtDatePT(maxD)}</span></div>`;
+  const rows=Object.entries(maqRows).map(([maq,bars])=>`
+    <div class="gantt-row">
+      <div class="gantt-label" title="${maq}">${maq}</div>
+      <div class="gantt-track">
+        ${bars.map(b=>`<div class="gantt-bar" style="left:${b.left}%;width:${b.width}%;background:${b.color}" title="${b.label}">${b.label}</div>`).join("")}
+      </div>
+    </div>`).join("");
+  area.innerHTML=hdr+rows;
+}
+
+function renderDetail(prog){
+  const el=document.getElementById("ordem-detail");
+  el.innerHTML=prog.map((s,i)=>{
+    const ops=s.ops.map((op,j)=>`
+      <div class="step-row">
+        <div class="step-num">${j+1}</div>
+        <div style="flex:1"><strong style="font-size:12px">${op.descricao}</strong>
+          <span class="op-tag">${op.maquina}</span>
+          <span style="font-size:11px;color:var(--muted)">${op.horas.toFixed(1)}h — ${op.dias} dia${op.dias>1?"s":""}</span>
+        </div>
+        <div style="text-align:right;font-size:11px;color:var(--muted)">${op.inicio} → <strong style="color:var(--green)">${op.conclusao}</strong></div>
+      </div>`).join("");
+    return`<div style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><span style="font-size:13px;font-weight:700">${s.ordem.numero}</span>
+          ${prioBadge(s.ordem.prioridade)}
+          <span class="op-tag">${s.ordem.cliente||""}</span>
+        </div>
+        <div style="text-align:right;font-size:12px">Conclusão prevista: <strong style="color:var(--green)">${s.conclusao}</strong></div>
+      </div>${ops}
+    </div>`;
+  }).join('<hr style="border:none;border-top:1px solid var(--border);margin:12px 0">');
+}
+
+// ─── EXPORT ────────────────────────────────────────────────
+function exportExcel(){
+  window.location.href="/api/exportar/excel";
+  toast("Gerando Excel, aguarde...");
+}
+
+// ─── UTILS ─────────────────────────────────────────────────
+function prioBadge(p){
+  const cls={Alta:"badge-red",Normal:"badge-amber",Baixa:"badge-green"}[p]||"badge-blue";
+  return`<span class="badge ${cls}">${p}</span>`;
+}
+function parseDate(s){
+  if(!s)return new Date();
+  const parts=s.includes("/")?s.split("/").reverse():s.split("-");
+  return new Date(+parts[0],+parts[1]-1,+parts[2]);
+}
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function fmtDatePT(d){return new Date(d).toLocaleDateString("pt-BR");}
+function fmtDate(s){if(!s)return"—";try{return parseDate(s).toLocaleDateString("pt-BR");}catch{return s;}}
+
+// ─── INIT ──────────────────────────────────────────────────
+document.getElementById("o-start").value = new Date().toISOString().split("T")[0];
+loadDashboard();
+</script>
+</body>
+</html>
